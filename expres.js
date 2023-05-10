@@ -1,38 +1,35 @@
-// Importar módulos necesarios
 const express = require('express');
-const ProductManager = require('./ProductManager');
-
-// Crear instancia de ProductManager
-const productManager = new ProductManager('products.json');
-
-// Crear instancia de Express
 const app = express();
+const ProductManager = require('./productManager');
+const productManager = new ProductManager();
 
-// Endpoint para obtener todos los productos
-app.get('/products', (req, res) => {
-  const limit = req.query.limit;
-  let products = productManager.getAll();
+const PORT = process.env.PORT || 8080;
 
-  if (limit) {
-    products = products.slice(0, limit);
+app.get('/products', async (req, res) => {
+  try {
+    const limit = req.query.limit ? parseInt(req.query.limit) : undefined;
+    const products = await productManager.getProducts(limit);
+    res.json({ products });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
   }
-
-  res.json({ products });
 });
 
-// Endpoint para obtener un producto por ID
-app.get('/products/:pid', (req, res) => {
-  const productId = req.params.pid;
-  const product = productManager.getById(productId);
-
-  if (!product) {
-    return res.status(404).json({ error: 'Product not found' });
+app.get('/products/:id', async (req, res) => {
+  try {
+    const product = await productManager.getProductById(req.params.id);
+    if (!product) {
+      res.status(404).json({ error: 'Product not found' });
+      return;
+    }
+    res.json({ product });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
   }
-
-  res.json({ product });
 });
 
-// Iniciar el servidor
-app.listen(3000, () => {
-  console.log('Server listening on port 3000');
+app.listen(PORT, () => {
+  console.log(`Server is listening on port ${PORT}`);
 });
